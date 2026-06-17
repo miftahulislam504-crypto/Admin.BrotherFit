@@ -31,13 +31,17 @@ export function fromDoc<T>(snap: DocumentSnapshot): T {
 }
 
 // ── Admin auth ────────────────────────────────────────────
+//
+// Admin status is determined by the `role` field on the user's
+// own profile document at users/{uid} — NOT a separate collection.
+// Expected shape: users/{uid} → { ..., role: "admin" }
 
 export async function adminLogin(email: string, password: string) {
   const result = await signInWithEmailAndPassword(auth, email, password);
 
   // Verify admin role
-  const adminDoc = await getDoc(doc(db, 'admins', result.user.uid));
-  if (!adminDoc.exists() || !adminDoc.data()?.isAdmin) {
+  const userDoc = await getDoc(doc(db, 'users', result.user.uid));
+  if (!userDoc.exists() || userDoc.data()?.role !== 'admin') {
     await signOut(auth);
     throw new Error('ACCESS_DENIED');
   }
@@ -50,6 +54,6 @@ export async function adminLogout() {
 }
 
 export async function checkAdminRole(uid: string): Promise<boolean> {
-  const snap = await getDoc(doc(db, 'admins', uid));
-  return snap.exists() && snap.data()?.isAdmin === true;
+  const snap = await getDoc(doc(db, 'users', uid));
+  return snap.exists() && snap.data()?.role === 'admin';
 }
