@@ -32,7 +32,6 @@ export default function AddProductPage() {
         rating:      0,
         reviewCount: 0,
         salesCount:  0,
-        updatedAt:   new Date(),
       });
 
       // Save variants
