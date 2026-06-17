@@ -6,7 +6,7 @@ import {
   writeBatch,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
-import { fromDoc } from '@/lib/firebase/helpers';
+import { fromDoc, convertTimestamps } from '@/lib/firebase/helpers';
 import type {
   Product, ProductVariant, Order, OrderStatus,
   Customer, Category, Coupon, Banner, Review,
@@ -202,7 +202,7 @@ export async function deleteCategory(id: string): Promise<void> {
 
 export async function getCustomers(pageSize = 20): Promise<Customer[]> {
   const snap = await getDocs(query(collection(db,'users'), orderBy('createdAt','desc'), limit(pageSize)));
-  return snap.docs.map(d => fromDoc<Customer>({ uid: d.id, ...d.data() }));
+  return snap.docs.map(d => convertTimestamps<Customer>({ uid: d.id, ...d.data() as Record<string, unknown> }));
 }
 
 // ── Coupons ───────────────────────────────────────────────
