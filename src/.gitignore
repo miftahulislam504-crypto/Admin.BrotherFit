@@ -1,0 +1,8 @@
+node_modules/
+/.next/
+/out/
+.env.local
+.firebase/
+.vercel
+*.tsbuildinfo
+next-env.d.ts
