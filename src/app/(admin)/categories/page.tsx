@@ -2,6 +2,7 @@
 // Categories Page
 import { useEffect, useState } from 'react';
 import { Plus, Pencil, Trash2, Layers } from 'lucide-react';
+import ImagePicker from '@/components/ui/ImagePicker';
 import { getCategories, createCategory, updateCategory, deleteCategory } from '@/services/adminService';
 import { Skeleton, EmptyState } from '@/components/ui/Spinner';
 import type { Category } from '@/types';
@@ -57,8 +58,17 @@ export default function CategoriesPage() {
           <div className="grid grid-cols-2 gap-3">
             <input value={form.name} onChange={e => setForm(f=>({...f,name:e.target.value}))} placeholder="Category name" className="input-field" />
             <input value={form.slug} onChange={e => setForm(f=>({...f,slug:e.target.value}))} placeholder="url-slug" className="input-field" />
-            <input value={form.icon} onChange={e => setForm(f=>({...f,icon:e.target.value}))} placeholder="Icon URL (optional)" className="input-field" />
             <input type="number" value={form.order} onChange={e => setForm(f=>({...f,order:Number(e.target.value)}))} placeholder="Order" className="input-field" />
+          </div>
+          <div>
+            <label className="text-xs font-medium text-muted mb-1.5 block">Icon (optional)</label>
+            <ImagePicker
+              images={form.icon ? [form.icon] : []}
+              onChange={imgs => setForm(f => ({ ...f, icon: imgs[0] ?? '' }))}
+              multiple={false}
+              maxImages={1}
+              label="Choose Icon"
+            />
           </div>
           <div className="flex gap-2">
             <button onClick={handleSave} disabled={saving} className="btn-primary">{saving ? '…' : 'Save'}</button>

@@ -3,10 +3,10 @@ import {
   getDocs, getDoc, doc, updateDoc, addDoc,
   deleteDoc, serverTimestamp, Timestamp,
   QueryConstraint, startAfter, DocumentSnapshot,
-  writeBatch,
+  writeBatch, setDoc,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
-import { fromDoc, convertTimestamps } from '@/lib/firebase/helpers';
+import { fromDoc } from '@/lib/firebase/helpers';
 import type {
   Product, ProductVariant, Order, OrderStatus,
   Customer, Category, Coupon, Banner, Review,
@@ -202,7 +202,7 @@ export async function deleteCategory(id: string): Promise<void> {
 
 export async function getCustomers(pageSize = 20): Promise<Customer[]> {
   const snap = await getDocs(query(collection(db,'users'), orderBy('createdAt','desc'), limit(pageSize)));
-  return snap.docs.map(d => convertTimestamps<Customer>({ uid: d.id, ...d.data() as Record<string, unknown> }));
+  return snap.docs.map(d => fromDoc<Customer>({ uid: d.id, ...d.data() }));
 }
 
 // ── Coupons ───────────────────────────────────────────────
@@ -271,5 +271,8 @@ export async function getStoreSettings(): Promise<StoreSettings|null> {
 }
 
 export async function updateStoreSettings(data: Partial<StoreSettings>): Promise<void> {
-  await updateDoc(doc(db,'settings','store'), data);
+  // setDoc + merge creates the document on first save instead of
+  // failing when settings/store doesn't exist yet (updateDoc requires
+  // the doc to already exist).
+  await setDoc(doc(db, 'settings', 'store'), data, { merge: true });
 }

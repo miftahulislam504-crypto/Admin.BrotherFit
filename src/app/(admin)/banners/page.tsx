@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { Plus, Trash2, ToggleLeft, ToggleRight, Image as ImageIcon } from 'lucide-react';
+import ImagePicker from '@/components/ui/ImagePicker';
 import { getBanners, upsertBanner, deleteBanner } from '@/services/adminService';
 import { Skeleton, EmptyState } from '@/components/ui/Spinner';
 import { cn } from '@/lib/utils';
@@ -58,14 +59,15 @@ export default function BannersPage() {
           <h3 className="font-serif text-sm text-primary">{editing?'Edit Banner':'New Banner'}</h3>
           <div className="space-y-3">
             <div>
-              <label className="text-xs font-medium text-muted mb-1 block">Image URL *</label>
-              <input value={form.image} onChange={e=>setForm(f=>({...f,image:e.target.value}))} placeholder="https://..." className="input-field" />
+              <label className="text-xs font-medium text-muted mb-1.5 block">Banner Image *</label>
+              <ImagePicker
+                images={form.image ? [form.image] : []}
+                onChange={imgs => setForm(f => ({ ...f, image: imgs[0] ?? '' }))}
+                multiple={false}
+                maxImages={1}
+                label="Choose Banner Image"
+              />
             </div>
-            {form.image && (
-              <div className="relative h-32 rounded-xl overflow-hidden bg-bg border border-border">
-                <Image src={form.image} alt="preview" fill className="object-cover" unoptimized />
-              </div>
-            )}
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="text-xs font-medium text-muted mb-1 block">Title *</label>

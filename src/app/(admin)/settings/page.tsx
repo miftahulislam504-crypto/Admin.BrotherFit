@@ -9,7 +9,7 @@ import toast from 'react-hot-toast';
 const DEFAULT: StoreSettings = {
   name: 'FashionOS', address: '', email: '', phone: '',
   payment: { bkash: true, nagad: true, cod: true },
-  delivery: { dhakaCharge: 2, outsideCharge: 5 },
+  delivery: { dhakaCharge: 60, outsideCharge: 120 },
   reviews:  { autoApprove: false },
 };
 
@@ -82,11 +82,11 @@ export default function SettingsPage() {
       </Section>
 
       {/* Delivery */}
-      <Section title="Delivery Charges (USD)">
+      <Section title="Delivery Charges (৳ Taka)">
         <div className="grid grid-cols-2 gap-4">
           <Field label="Dhaka City">
             <input
-              type="number" step="0.5" min="0"
+              type="number" step="1" min="0"
               value={settings.delivery.dhakaCharge}
               onChange={e=>update('delivery.dhakaCharge', Number(e.target.value))}
               className="input-field"
@@ -94,7 +94,7 @@ export default function SettingsPage() {
           </Field>
           <Field label="Outside Dhaka">
             <input
-              type="number" step="0.5" min="0"
+              type="number" step="1" min="0"
               value={settings.delivery.outsideCharge}
               onChange={e=>update('delivery.outsideCharge', Number(e.target.value))}
               className="input-field"

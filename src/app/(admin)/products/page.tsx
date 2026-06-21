@@ -105,7 +105,7 @@ export default function ProductsPage() {
                       <div className="flex items-center gap-3">
                         <div className="relative w-10 h-12 rounded-lg overflow-hidden bg-bg flex-shrink-0">
                           {product.images[0] && (
-                            <Image src={product.images[0]} alt={product.name} fill className="object-cover" sizes="40px" />
+                            <Image src={product.images[0]} alt={product.name} fill className="object-cover" sizes="40px" unoptimized />
                           )}
                         </div>
                         <div className="min-w-0">

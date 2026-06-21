@@ -4,10 +4,11 @@ import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { X, Plus, Upload, GripVertical } from 'lucide-react';
+import { X, Plus } from 'lucide-react';
 import { getCategories } from '@/services/adminService';
 import { slugify, cn } from '@/lib/utils';
 import { Spinner } from '@/components/ui/Spinner';
+import ImagePicker from '@/components/ui/ImagePicker';
 import type { Product, Category, ProductVariant } from '@/types';
 
 // ── Schema ─────────────────────────────────────────────────
@@ -59,7 +60,6 @@ export default function ProductForm({ product, variants = [], onSubmit, loading 
       ? variants.map(v => ({ id: v.id, size: v.size, color: v.color, colorHex: v.colorHex ?? '', stock: v.stock }))
       : []
   );
-  const [newImageUrl, setNewImageUrl] = useState('');
   const [newSize,     setNewSize]     = useState('');
   const [newColor,    setNewColor]    = useState('');
   const [newColorHex, setNewColorHex] = useState('#000000');
@@ -87,16 +87,6 @@ export default function ProductForm({ product, variants = [], onSubmit, loading 
   }, [name, product, setValue]);
 
   useEffect(() => { getCategories().then(setCategories); }, []);
-
-  // ── Image handlers ────────────────────────────────────────
-
-  const addImage = () => {
-    if (!newImageUrl.trim()) return;
-    setImages(prev => [...prev, newImageUrl.trim()]);
-    setNewImageUrl('');
-  };
-
-  const removeImage = (i: number) => setImages(prev => prev.filter((_, idx) => idx !== i));
 
   // ── Variant handlers ──────────────────────────────────────
 
@@ -161,18 +151,18 @@ export default function ProductForm({ product, variants = [], onSubmit, loading 
       {/* ── Pricing ────────────────────────────────── */}
       <Section title="Pricing">
         <div className="grid grid-cols-2 gap-4">
-          <Field label="Base Price (USD)" error={errors.basePrice?.message} required>
+          <Field label="Base Price (৳ Taka)" error={errors.basePrice?.message} required>
             <input
               {...register('basePrice', { valueAsNumber: true })}
-              type="number" step="0.01" min="0"
-              placeholder="99.00"
+              type="number" step="1" min="0"
+              placeholder="990"
               className={`input-field ${errors.basePrice ? 'input-error' : ''}`}
             />
           </Field>
-          <Field label="Sale Price (USD)">
+          <Field label="Sale Price (৳ Taka)">
             <input
               {...register('salePrice', { valueAsNumber: true, setValueAs: v => v === '' ? undefined : Number(v) })}
-              type="number" step="0.01" min="0"
+              type="number" step="1" min="0"
               placeholder="Leave empty if no discount"
               className="input-field"
             />
@@ -182,43 +172,13 @@ export default function ProductForm({ product, variants = [], onSubmit, loading 
 
       {/* ── Images ─────────────────────────────────── */}
       <Section title="Product Images">
-        {/* Image URL input */}
-        <div className="flex gap-2">
-          <input
-            value={newImageUrl}
-            onChange={e => setNewImageUrl(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addImage())}
-            placeholder="Paste image URL (Firebase Storage or external)"
-            className="input-field flex-1"
-          />
-          <button type="button" onClick={addImage} className="btn-outline flex-shrink-0">
-            <Plus size={15} /> Add
-          </button>
-        </div>
-
-        {/* Image grid */}
-        {images.length > 0 && (
-          <div className="grid grid-cols-4 gap-2 mt-3">
-            {images.map((url, i) => (
-              <div key={i} className="relative group aspect-square rounded-xl overflow-hidden bg-bg border border-border">
-                <img src={url} alt="" className="w-full h-full object-cover" />
-                <button
-                  type="button"
-                  onClick={() => removeImage(i)}
-                  className="absolute top-1 right-1 w-6 h-6 bg-black/60 text-white rounded-full
-                             flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                >
-                  <X size={11} />
-                </button>
-                {i === 0 && (
-                  <span className="absolute bottom-1 left-1 text-[9px] bg-primary text-white px-1.5 py-0.5 rounded-md">
-                    Main
-                  </span>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
+        <ImagePicker
+          images={images}
+          onChange={setImages}
+          multiple
+          maxImages={6}
+          label="Choose from Gallery"
+        />
       </Section>
 
       {/* ── Variants ───────────────────────────────── */}

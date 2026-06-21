@@ -140,7 +140,7 @@ export default function FlashSalesPage() {
                     className="w-4 h-4 rounded flex-shrink-0"
                   />
                   <div className="relative w-9 h-11 rounded-lg overflow-hidden bg-bg flex-shrink-0">
-                    {p.images[0] && <Image src={p.images[0]} alt="" fill className="object-cover" sizes="36px" />}
+                    {p.images[0] && <Image src={p.images[0]} alt="" fill className="object-cover" sizes="36px" unoptimized />}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm text-text clamp-1">{p.name}</p>

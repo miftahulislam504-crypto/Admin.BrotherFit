@@ -134,7 +134,7 @@ export default function OrderDetailPage() {
               <div key={i} className="flex gap-3 pb-3 border-b border-border last:border-0 last:pb-0">
                 <div className="relative w-14 h-16 rounded-xl overflow-hidden bg-bg flex-shrink-0">
                   {item.productImage && (
-                    <Image src={item.productImage} alt={item.productName} fill className="object-cover" sizes="56px" />
+                    <Image src={item.productImage} alt={item.productName} fill className="object-cover" sizes="56px" unoptimized />
                   )}
                 </div>
                 <div className="flex-1 min-w-0">

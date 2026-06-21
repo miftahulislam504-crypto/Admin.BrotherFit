@@ -4,7 +4,7 @@ import { twMerge } from 'tailwind-merge';
 export const cn = (...inputs: ClassValue[]) => twMerge(clsx(inputs));
 
 export const formatPrice = (n: number) =>
-  new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n);
+  `৳${Math.round(n).toLocaleString('en-BD')}`;
 
 export const formatDate = (d: Date) =>
   new Intl.DateTimeFormat('en-BD', { day: 'numeric', month: 'short', year: 'numeric' }).format(d);

@@ -111,7 +111,7 @@ export default function InventoryPage() {
                     <td className="tbl-cell">
                       <div className="flex items-center gap-2.5">
                         <div className="relative w-9 h-11 rounded-lg overflow-hidden bg-bg flex-shrink-0">
-                          {row.productImage && <Image src={row.productImage} alt="" fill className="object-cover" sizes="36px" />}
+                          {row.productImage && <Image src={row.productImage} alt="" fill className="object-cover" sizes="36px" unoptimized />}
                         </div>
                         <span className="text-sm font-medium text-text clamp-1">{row.productName}</span>
                       </div>

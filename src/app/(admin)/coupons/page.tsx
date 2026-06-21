@@ -69,7 +69,7 @@ export default function CouponsPage() {
               <label className="text-xs font-medium text-muted mb-1 block">Type</label>
               <select value={form.type} onChange={e=>setForm(f=>({...f,type:e.target.value as typeof form.type}))} className="input-field">
                 <option value="percentage">Percentage (%)</option>
-                <option value="fixed">Fixed Amount ($)</option>
+                <option value="fixed">Fixed Amount (৳)</option>
               </select>
             </div>
             <div>
@@ -77,8 +77,8 @@ export default function CouponsPage() {
               <input type="number" min="0" value={form.value} onChange={e=>setForm(f=>({...f,value:Number(e.target.value)}))} placeholder={form.type==='percentage'?'20':'10'} className="input-field" />
             </div>
             <div>
-              <label className="text-xs font-medium text-muted mb-1 block">Min Order ($)</label>
-              <input type="number" min="0" value={form.minOrder} onChange={e=>setForm(f=>({...f,minOrder:Number(e.target.value)}))} placeholder="50" className="input-field" />
+              <label className="text-xs font-medium text-muted mb-1 block">Min Order (৳)</label>
+              <input type="number" min="0" value={form.minOrder} onChange={e=>setForm(f=>({...f,minOrder:Number(e.target.value)}))} placeholder="500" className="input-field" />
             </div>
             <div>
               <label className="text-xs font-medium text-muted mb-1 block">Usage Limit</label>
