@@ -28,7 +28,7 @@ export default function AddProductPage() {
         images,
         isActive:    data.isActive,
         isFeatured:  data.isFeatured,
-        // brandId, rating, reviewCount, salesCount omitted — set by createProduct
+        salesCount:  0,               // required by Product type; overwritten by createProduct
       });
 
       // Save variants
