@@ -41,6 +41,7 @@ export default function EditProductPage() {
         material:    data.material ?? '',
         tags:        data.tags ? data.tags.split(',').map(t => t.trim()).filter(Boolean) : [],
         images,
+        section:     data.section,
         isActive:    data.isActive,
         isFeatured:  data.isFeatured,
       });

@@ -23,6 +23,7 @@ const schema = z.object({
   description: z.string().min(10, 'Description must be at least 10 characters'),
   material:    z.string().optional(),
   tags:        z.string().optional(),
+  section:     z.enum(['trending', 'explore']).optional(),
   isActive:    z.boolean(),
   isFeatured:  z.boolean(),
 });
@@ -76,6 +77,7 @@ export default function ProductForm({ product, variants = [], onSubmit, loading 
       description: product?.description ?? '',
       material:    product?.material    ?? '',
       tags:        product?.tags?.join(', ') ?? '',
+      section:     product?.section,
       isActive:    product?.isActive    ?? true,
       isFeatured:  product?.isFeatured  ?? false,
     },
@@ -238,6 +240,52 @@ export default function ProductForm({ product, variants = [], onSubmit, loading 
               </tbody>
             </table>
           </div>
+        )}
+      </Section>
+
+      {/* ── Home Section ───────────────────────────── */}
+      <Section title="Home Page Section">
+        <p className="text-xs text-muted mb-3">
+          Product কোন section-এ দেখাবে তা বেছে নিন।
+        </p>
+        <div className="flex gap-4 flex-wrap">
+          {[
+            { value: 'trending', label: 'Trending Now', desc: 'Home-এর "Trending Now" section-এ দেখাবে' },
+            { value: 'explore',  label: 'New Arrivals', desc: 'Home-এর "New Arrivals" section-এ দেখাবে' },
+          ].map(opt => {
+            const current = watch('section');
+            return (
+              <label
+                key={opt.value}
+                className={`flex items-start gap-3 cursor-pointer border rounded-xl px-4 py-3 flex-1 min-w-[180px] transition-colors ${
+                  current === opt.value
+                    ? 'border-primary bg-primary/5'
+                    : 'border-border hover:border-primary/50'
+                }`}
+              >
+                <input
+                  type="radio"
+                  value={opt.value}
+                  checked={current === opt.value}
+                  onChange={() => setValue('section', opt.value as 'trending' | 'explore')}
+                  className="mt-0.5 accent-primary"
+                />
+                <div>
+                  <p className="text-sm font-semibold text-text">{opt.label}</p>
+                  <p className="text-xs text-muted mt-0.5">{opt.desc}</p>
+                </div>
+              </label>
+            );
+          })}
+        </div>
+        {watch('section') && (
+          <button
+            type="button"
+            onClick={() => setValue('section', undefined)}
+            className="text-xs text-muted hover:text-error mt-2 underline"
+          >
+            Section নির্বাচন বাতিল করুন
+          </button>
         )}
       </Section>
 

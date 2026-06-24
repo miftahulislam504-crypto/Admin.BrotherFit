@@ -20,6 +20,8 @@ export interface Brand {
   id: string; name: string; slug: string; logo?: string; isActive: boolean;
 }
 
+export type ProductSection = 'trending' | 'explore';
+
 export interface Product {
   id: string; name: string; slug: string; sku: string;
   categoryId: string; brandId?: string;
@@ -27,6 +29,7 @@ export interface Product {
   images: string[];
   description: string; material?: string;
   tags: string[];
+  section?: ProductSection;
   isActive: boolean; isFeatured: boolean;
   salesCount: number; rating?: number; reviewCount?: number;
   createdAt: Date; updatedAt: Date;

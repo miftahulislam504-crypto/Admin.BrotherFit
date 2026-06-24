@@ -106,6 +106,7 @@ export async function createProduct(data: Omit<Product,'id'|'createdAt'|'updated
   if (payload.brandId    === undefined) delete payload.brandId;
   if (payload.salePrice  === undefined) delete payload.salePrice;
   if (payload.material   === undefined || payload.material === '') delete payload.material;
+  if (payload.section    === undefined) delete payload.section;
   const ref = await addDoc(collection(db,'products'), payload);
   return ref.id;
 }
@@ -114,6 +115,7 @@ export async function updateProduct(id: string, data: Partial<Product>): Promise
   const payload: Record<string, unknown> = { ...data, updatedAt: serverTimestamp() };
   if (payload.brandId   === undefined) delete payload.brandId;
   if (payload.salePrice === undefined) delete payload.salePrice;
+  if (payload.section   === undefined) delete payload.section;
   await updateDoc(doc(db,'products',id), payload);
 }
 

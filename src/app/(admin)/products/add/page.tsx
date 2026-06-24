@@ -26,6 +26,7 @@ export default function AddProductPage() {
         material:    data.material,    // undefined stripped inside createProduct
         tags:        data.tags ? data.tags.split(',').map(t => t.trim()).filter(Boolean) : [],
         images,
+        section:     data.section,    // undefined stripped inside createProduct
         isActive:    data.isActive,
         isFeatured:  data.isFeatured,
         salesCount:  0,               // required by Product type; overwritten by createProduct
