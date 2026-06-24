@@ -22,18 +22,33 @@ export default function CategoriesPage() {
   const openEdit = (c: Category) => { setEditing(c); setForm({ name:c.name, slug:c.slug, icon:c.icon??'', order:c.order }); };
 
   const handleSave = async () => {
-    if (!form.name) return;
+    if (!form.name.trim()) { toast.error('Category name is required'); return; }
+    if (!form.slug.trim()) { toast.error('Slug is required'); return; }
+
+    // Guard: base64 icon must not exceed ~900 KB (Firestore doc limit is 1 MiB)
+    if (form.icon) {
+      const base64Part = form.icon.includes(',') ? form.icon.split(',')[1] : form.icon;
+      const iconKB = Math.round((base64Part.length * 0.75) / 1024);
+      if (iconKB > 900) {
+        toast.error('Icon image is too large. Please choose a smaller image.');
+        return;
+      }
+    }
+
     setSaving(true);
     try {
       if (editing) {
         await updateCategory(editing.id, { ...form, isActive: editing.isActive });
       } else {
-        await createCategory({ ...form, isActive: true, parentId: undefined });
+        await createCategory({ ...form, isActive: true });
       }
       toast.success(editing ? 'Category updated' : 'Category created');
-      setEditing(null); setForm({ name:'',slug:'',icon:'',order:0 });
+      setEditing(null); setForm({ name:'', slug:'', icon:'', order: 0 });
       load();
-    } catch { toast.error('Failed to save category'); }
+    } catch (err) {
+      console.error('Category save error:', err);
+      toast.error('Failed to save category');
+    }
     setSaving(false);
   };
 

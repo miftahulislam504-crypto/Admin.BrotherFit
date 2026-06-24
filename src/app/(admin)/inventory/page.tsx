@@ -47,7 +47,7 @@ export default function InventoryPage() {
       await adjustStock(id, editValue);
       setRows(prev => prev.map(r => r.id === id ? { ...r, stock: editValue } : r));
       toast.success('Stock updated');
-    } catch { toast.error('Failed to update stock'); }
+    } catch (err) { console.error(err); toast.error('Failed to update stock'); }
     setEditingId(null);
   };
 

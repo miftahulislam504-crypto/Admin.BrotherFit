@@ -99,14 +99,22 @@ export async function getProductVariants(productId: string): Promise<ProductVari
 }
 
 export async function createProduct(data: Omit<Product,'id'|'createdAt'|'updatedAt'>): Promise<string> {
-  const ref = await addDoc(collection(db,'products'), {
+  // Strip undefined optional fields — Firestore rejects them
+  const payload: Record<string, unknown> = {
     ...data, salesCount: 0, createdAt: serverTimestamp(), updatedAt: serverTimestamp(),
-  });
+  };
+  if (payload.brandId    === undefined) delete payload.brandId;
+  if (payload.salePrice  === undefined) delete payload.salePrice;
+  if (payload.material   === undefined || payload.material === '') delete payload.material;
+  const ref = await addDoc(collection(db,'products'), payload);
   return ref.id;
 }
 
 export async function updateProduct(id: string, data: Partial<Product>): Promise<void> {
-  await updateDoc(doc(db,'products',id), { ...data, updatedAt: serverTimestamp() });
+  const payload: Record<string, unknown> = { ...data, updatedAt: serverTimestamp() };
+  if (payload.brandId   === undefined) delete payload.brandId;
+  if (payload.salePrice === undefined) delete payload.salePrice;
+  await updateDoc(doc(db,'products',id), payload);
 }
 
 export async function deleteProduct(id: string): Promise<void> {
@@ -163,9 +171,11 @@ export async function updateOrderStatus(id: string, status: OrderStatus, note?: 
   const snap = await getDoc(doc(db,'orders',id));
   if (!snap.exists()) throw new Error('Order not found');
   const history = snap.data().statusHistory ?? [];
+  const entry: Record<string, unknown> = { status, timestamp: Timestamp.now() };
+  if (note !== undefined) entry.note = note;
   await updateDoc(doc(db,'orders',id), {
     status,
-    statusHistory: [...history, { status, timestamp: Timestamp.now(), note }],
+    statusHistory: [...history, entry],
     updatedAt: serverTimestamp(),
   });
 }
@@ -186,12 +196,19 @@ export async function getCategories(): Promise<Category[]> {
 }
 
 export async function createCategory(data: Omit<Category,'id'>): Promise<string> {
-  const ref = await addDoc(collection(db,'categories'), data);
+  // Firestore rejects `undefined` values — strip parentId if not set
+  const payload: Record<string, unknown> = { ...data };
+  if (payload.parentId === undefined) delete payload.parentId;
+  if (payload.icon === '' || payload.icon === undefined) delete payload.icon;
+  const ref = await addDoc(collection(db,'categories'), payload);
   return ref.id;
 }
 
 export async function updateCategory(id: string, data: Partial<Category>): Promise<void> {
-  await updateDoc(doc(db,'categories',id), data);
+  const payload: Record<string, unknown> = { ...data };
+  if (payload.parentId === undefined) delete payload.parentId;
+  // Keep icon as empty string if user cleared it — that's intentional
+  await updateDoc(doc(db,'categories',id), payload);
 }
 
 export async function deleteCategory(id: string): Promise<void> {
@@ -233,12 +250,18 @@ export async function getBanners(): Promise<Banner[]> {
 }
 
 export async function upsertBanner(data: Partial<Banner> & { id?: string }): Promise<string> {
-  if (data.id) {
-    const { id, ...rest } = data;
-    await updateDoc(doc(db,'banners',id), rest);
+  const { id, ...rest } = data;
+  // Strip undefined optional fields — Firestore rejects them
+  const payload: Record<string, unknown> = { ...rest };
+  if (payload.subtitle  === undefined) delete payload.subtitle;
+  if (payload.link      === undefined) delete payload.link;
+  if (payload.startDate === undefined) delete payload.startDate;
+  if (payload.endDate   === undefined) delete payload.endDate;
+  if (id) {
+    await updateDoc(doc(db,'banners',id), payload);
     return id;
   }
-  const ref = await addDoc(collection(db,'banners'), data);
+  const ref = await addDoc(collection(db,'banners'), payload);
   return ref.id;
 }
 

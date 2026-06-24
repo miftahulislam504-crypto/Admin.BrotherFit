@@ -21,17 +21,14 @@ export default function AddProductPage() {
         sku:         data.sku,
         categoryId:  data.categoryId,
         basePrice:   data.basePrice,
-        salePrice:   data.salePrice,
+        salePrice:   data.salePrice,   // undefined stripped inside createProduct
         description: data.description,
-        material:    data.material ?? '',
+        material:    data.material,    // undefined stripped inside createProduct
         tags:        data.tags ? data.tags.split(',').map(t => t.trim()).filter(Boolean) : [],
         images,
         isActive:    data.isActive,
         isFeatured:  data.isFeatured,
-        brandId:     undefined,
-        rating:      0,
-        reviewCount: 0,
-        salesCount:  0,
+        // brandId, rating, reviewCount, salesCount omitted — set by createProduct
       });
 
       // Save variants

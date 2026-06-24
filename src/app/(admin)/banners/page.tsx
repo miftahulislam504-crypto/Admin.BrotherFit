@@ -33,7 +33,7 @@ export default function BannersPage() {
       await upsertBanner(editing ? { ...form, id: editing.id } : form);
       toast.success(editing ? 'Banner updated' : 'Banner created');
       setShowForm(false); setEditing(null); load();
-    } catch { toast.error('Failed'); }
+    } catch (err) { console.error(err); toast.error('Failed'); }
     setSaving(false);
   };
 

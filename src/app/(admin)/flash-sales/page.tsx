@@ -59,7 +59,7 @@ export default function FlashSalesPage() {
       toast.success('Flash sale created');
       setForm(EMPTY); setShowForm(false);
       setSales(await getFlashSales());
-    } catch { toast.error('Failed to create'); }
+    } catch (err) { console.error(err); toast.error('Failed to create'); }
     setSaving(false);
   };
 

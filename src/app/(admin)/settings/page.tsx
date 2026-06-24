@@ -39,7 +39,7 @@ export default function SettingsPage() {
     try {
       await updateStoreSettings(settings);
       toast.success('Settings saved');
-    } catch { toast.error('Failed to save'); }
+    } catch (err) { console.error(err); toast.error('Failed to save'); }
     setSaving(false);
   };
 

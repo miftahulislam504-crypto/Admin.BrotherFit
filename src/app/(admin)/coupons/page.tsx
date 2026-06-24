@@ -35,7 +35,7 @@ export default function CouponsPage() {
       });
       toast.success('Coupon created');
       setForm(EMPTY); setShowForm(false); load();
-    } catch { toast.error('Failed'); }
+    } catch (err) { console.error(err); toast.error('Failed'); }
     setSaving(false);
   };
 
