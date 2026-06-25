@@ -144,13 +144,16 @@ export default function CategoriesPage() {
         </div>
       )}
 
-      <div className="card overflow-hidden">
-        <table className="w-full">
+      {/* ✅ FIX: overflow-x-auto — Actions column mobile এ কেটে যাচ্ছিল */}
+      <div className="card overflow-x-auto">
+        <table className="w-full min-w-[480px]">
           <thead>
             <tr className="border-b border-border bg-bg/40">
-              {['Order', 'Icon', 'Name', 'Slug', 'Actions'].map(h => (
-                <th key={h} className="tbl-head tbl-cell text-left">{h}</th>
-              ))}
+              <th className="tbl-head tbl-cell text-left w-14">Order</th>
+              <th className="tbl-head tbl-cell text-left w-14">Icon</th>
+              <th className="tbl-head tbl-cell text-left">Name</th>
+              <th className="tbl-head tbl-cell text-left hidden sm:table-cell">Slug</th>
+              <th className="tbl-head tbl-cell text-right w-20">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -169,7 +172,6 @@ export default function CategoriesPage() {
             ) : cats.map(c => (
               <tr key={c.id} className="tbl-row">
                 <td className="tbl-cell text-muted">{c.order}</td>
-                {/* ✅ FIX: c.image দিয়ে preview দেখানো হচ্ছে (আগে c.icon ছিল) */}
                 <td className="tbl-cell">
                   {c.image
                     ? <img src={c.image} alt={c.name} className="w-8 h-8 rounded-lg object-cover border border-border" />
@@ -177,15 +179,18 @@ export default function CategoriesPage() {
                   }
                 </td>
                 <td className="tbl-cell font-medium">{c.name}</td>
-                <td className="tbl-cell text-muted font-mono text-xs">{c.slug}</td>
+                {/* Slug column hidden on very small screens */}
+                <td className="tbl-cell text-muted font-mono text-xs hidden sm:table-cell max-w-[120px] truncate">{c.slug}</td>
+                {/* ✅ FIX: Actions সবসময় দেখা যাবে, right-align করা */}
                 <td className="tbl-cell">
-                  <div className="flex gap-1">
-                    <button onClick={() => openEdit(c)} className="btn-ghost p-1.5">
+                  <div className="flex gap-1 justify-end">
+                    <button onClick={() => openEdit(c)} className="btn-ghost p-1.5" title="Edit">
                       <Pencil size={13} />
                     </button>
                     <button
                       onClick={() => handleDelete(c.id, c.name)}
                       className="btn-ghost p-1.5 hover:text-error hover:bg-error/10"
+                      title="Delete"
                     >
                       <Trash2 size={13} />
                     </button>
