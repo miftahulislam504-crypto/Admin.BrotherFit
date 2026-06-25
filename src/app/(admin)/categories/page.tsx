@@ -9,56 +9,74 @@ import type { Category } from '@/types';
 import toast from 'react-hot-toast';
 
 export default function CategoriesPage() {
-  const [cats, setCats] = useState < Category[] > ([]);
+  const [cats, setCats] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
-  const [editing, setEditing] = useState < Category | null > (null);
-  const [showForm, setShowForm] = useState(false); // ✅ Fix: explicit form visibility
-  const [form, setForm] = useState({ name: '', slug: '', icon: '', order: 0 });
+  const [editing, setEditing] = useState<Category | null>(null);
+  const [showForm, setShowForm] = useState(false);
+  // ✅ FIX: form এ 'image' field ব্যবহার করা হচ্ছে (আগে 'icon' ছিল)
+  // Frontend CategoryRow.tsx এবং CategoryDrawer.tsx উভয়ই cat.image চেক করে
+  const [form, setForm] = useState({ name: '', slug: '', image: '', order: 0 });
   const [saving, setSaving] = useState(false);
-  
-  const load = async () => { setCats(await getCategories());
-    setLoading(false); };
+
+  const load = async () => {
+    setCats(await getCategories());
+    setLoading(false);
+  };
   useEffect(() => { load(); }, []);
-  
+
   const openAdd = () => {
     setEditing(null);
-    setForm({ name: '', slug: '', icon: '', order: cats.length });
-    setShowForm(true); // ✅ Fix
+    setForm({ name: '', slug: '', image: '', order: cats.length });
+    setShowForm(true);
   };
   const openEdit = (c: Category) => {
     setEditing(c);
-    setForm({ name: c.name, slug: c.slug, icon: c.icon ?? '', order: c.order });
-    setShowForm(true); // ✅ Fix
+    // ✅ FIX: c.image থেকে পড়া হচ্ছে (আগে c.icon ছিল)
+    setForm({ name: c.name, slug: c.slug, image: c.image ?? '', order: c.order });
+    setShowForm(true);
   };
   const closeForm = () => {
     setEditing(null);
-    setShowForm(false); // ✅ Fix
-    setForm({ name: '', slug: '', icon: '', order: 0 });
+    setShowForm(false);
+    setForm({ name: '', slug: '', image: '', order: 0 });
   };
-  
+
   const handleSave = async () => {
     if (!form.name.trim()) { toast.error('Category name is required'); return; }
     if (!form.slug.trim()) { toast.error('Slug is required'); return; }
-    
-    // Guard: base64 icon must not exceed ~900 KB (Firestore doc limit is 1 MiB)
-    if (form.icon) {
-      const base64Part = form.icon.includes(',') ? form.icon.split(',')[1] : form.icon;
-      const iconKB = Math.round((base64Part.length * 0.75) / 1024);
-      if (iconKB > 900) {
-        toast.error('Icon image is too large. Please choose a smaller image.');
+
+    // Guard: base64 image must not exceed ~900 KB (Firestore doc limit is 1 MiB)
+    if (form.image) {
+      const base64Part = form.image.includes(',') ? form.image.split(',')[1] : form.image;
+      const imageKB = Math.round((base64Part.length * 0.75) / 1024);
+      if (imageKB > 900) {
+        toast.error('Image is too large. Please choose a smaller image.');
         return;
       }
     }
-    
+
     setSaving(true);
     try {
+      // ✅ FIX: payload এ 'image' field পাঠানো হচ্ছে (আগে 'icon' ছিল)
       if (editing) {
-        await updateCategory(editing.id, { ...form, isActive: editing.isActive });
+        await updateCategory(editing.id, {
+          name: form.name,
+          slug: form.slug,
+          image: form.image || undefined,
+          order: form.order,
+          isActive: editing.isActive,
+        });
       } else {
-        await createCategory({ ...form, isActive: true });
+        await createCategory({
+          name: form.name,
+          slug: form.slug,
+          image: form.image || undefined,
+          order: form.order,
+          isActive: true,
+        });
       }
       toast.success(editing ? 'Category updated' : 'Category created');
-      closeForm(); // ✅ Fix: use closeForm
+      closeForm();
       load();
     } catch (err) {
       console.error('Category save error:', err);
@@ -66,14 +84,14 @@ export default function CategoriesPage() {
     }
     setSaving(false);
   };
-  
+
   const handleDelete = async (id: string, name: string) => {
     if (!confirm(`Delete "${name}"?`)) return;
     await deleteCategory(id);
     toast.success('Deleted');
     load();
   };
-  
+
   return (
     <div className="space-y-5 max-w-2xl">
       <div className="flex justify-between items-center">
@@ -81,7 +99,6 @@ export default function CategoriesPage() {
         <button onClick={openAdd} className="btn-primary"><Plus size={15} /> Add</button>
       </div>
 
-      {/* ✅ Fix: showForm controls visibility — no accidental always-open bug */}
       {showForm && (
         <div className="card card-inner space-y-3">
           <h3 className="font-serif text-sm text-primary">{editing ? 'Edit Category' : 'New Category'}</h3>
@@ -107,14 +124,14 @@ export default function CategoriesPage() {
             />
           </div>
           <div>
-            <label className="text-xs font-medium text-muted mb-1.5 block">Icon (optional)</label>
-            {/* ✅ Fix: isIcon=true — uses 128px compression, shows square preview */}
+            {/* ✅ FIX: Label "Category Image" এবং isIcon=true দিয়ে compressed রাখা */}
+            <label className="text-xs font-medium text-muted mb-1.5 block">Category Image (optional)</label>
             <ImagePicker
-              images={form.icon ? [form.icon] : []}
-              onChange={imgs => setForm(f => ({ ...f, icon: imgs[0] ?? '' }))}
+              images={form.image ? [form.image] : []}
+              onChange={imgs => setForm(f => ({ ...f, image: imgs[0] ?? '' }))}
               multiple={false}
               maxImages={1}
-              label="Choose Icon"
+              label="Choose Image"
               isIcon={true}
             />
           </div>
@@ -152,10 +169,10 @@ export default function CategoriesPage() {
             ) : cats.map(c => (
               <tr key={c.id} className="tbl-row">
                 <td className="tbl-cell text-muted">{c.order}</td>
-                {/* ✅ Fix: show icon preview in table */}
+                {/* ✅ FIX: c.image দিয়ে preview দেখানো হচ্ছে (আগে c.icon ছিল) */}
                 <td className="tbl-cell">
-                  {c.icon
-                    ? <img src={c.icon} alt={c.name} className="w-8 h-8 rounded-lg object-cover border border-border" />
+                  {c.image
+                    ? <img src={c.image} alt={c.name} className="w-8 h-8 rounded-lg object-cover border border-border" />
                     : <span className="text-xs text-muted/40">—</span>
                   }
                 </td>

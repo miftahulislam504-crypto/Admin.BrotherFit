@@ -201,6 +201,7 @@ export async function createCategory(data: Omit<Category,'id'>): Promise<string>
   // Firestore rejects `undefined` values — strip parentId if not set
   const payload: Record<string, unknown> = { ...data };
   if (payload.parentId === undefined) delete payload.parentId;
+  if (payload.image === '' || payload.image === undefined) delete payload.image;
   if (payload.icon === '' || payload.icon === undefined) delete payload.icon;
   const ref = await addDoc(collection(db,'categories'), payload);
   return ref.id;
