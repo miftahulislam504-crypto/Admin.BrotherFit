@@ -9,22 +9,37 @@ import type { Category } from '@/types';
 import toast from 'react-hot-toast';
 
 export default function CategoriesPage() {
-  const [cats,    setCats]    = useState<Category[]>([]);
+  const [cats, setCats] = useState < Category[] > ([]);
   const [loading, setLoading] = useState(true);
-  const [editing, setEditing] = useState<Category | null>(null);
-  const [form,    setForm]    = useState({ name: '', slug: '', icon: '', order: 0 });
-  const [saving,  setSaving]  = useState(false);
-
-  const load = async () => { setCats(await getCategories()); setLoading(false); };
+  const [editing, setEditing] = useState < Category | null > (null);
+  const [showForm, setShowForm] = useState(false); // ✅ Fix: explicit form visibility
+  const [form, setForm] = useState({ name: '', slug: '', icon: '', order: 0 });
+  const [saving, setSaving] = useState(false);
+  
+  const load = async () => { setCats(await getCategories());
+    setLoading(false); };
   useEffect(() => { load(); }, []);
-
-  const openAdd  = () => { setEditing(null); setForm({ name:'', slug:'', icon:'', order: cats.length }); };
-  const openEdit = (c: Category) => { setEditing(c); setForm({ name:c.name, slug:c.slug, icon:c.icon??'', order:c.order }); };
-
+  
+  const openAdd = () => {
+    setEditing(null);
+    setForm({ name: '', slug: '', icon: '', order: cats.length });
+    setShowForm(true); // ✅ Fix
+  };
+  const openEdit = (c: Category) => {
+    setEditing(c);
+    setForm({ name: c.name, slug: c.slug, icon: c.icon ?? '', order: c.order });
+    setShowForm(true); // ✅ Fix
+  };
+  const closeForm = () => {
+    setEditing(null);
+    setShowForm(false); // ✅ Fix
+    setForm({ name: '', slug: '', icon: '', order: 0 });
+  };
+  
   const handleSave = async () => {
     if (!form.name.trim()) { toast.error('Category name is required'); return; }
     if (!form.slug.trim()) { toast.error('Slug is required'); return; }
-
+    
     // Guard: base64 icon must not exceed ~900 KB (Firestore doc limit is 1 MiB)
     if (form.icon) {
       const base64Part = form.icon.includes(',') ? form.icon.split(',')[1] : form.icon;
@@ -34,7 +49,7 @@ export default function CategoriesPage() {
         return;
       }
     }
-
+    
     setSaving(true);
     try {
       if (editing) {
@@ -43,7 +58,7 @@ export default function CategoriesPage() {
         await createCategory({ ...form, isActive: true });
       }
       toast.success(editing ? 'Category updated' : 'Category created');
-      setEditing(null); setForm({ name:'', slug:'', icon:'', order: 0 });
+      closeForm(); // ✅ Fix: use closeForm
       load();
     } catch (err) {
       console.error('Category save error:', err);
@@ -51,14 +66,14 @@ export default function CategoriesPage() {
     }
     setSaving(false);
   };
-
+  
   const handleDelete = async (id: string, name: string) => {
     if (!confirm(`Delete "${name}"?`)) return;
     await deleteCategory(id);
     toast.success('Deleted');
     load();
   };
-
+  
   return (
     <div className="space-y-5 max-w-2xl">
       <div className="flex justify-between items-center">
@@ -66,53 +81,97 @@ export default function CategoriesPage() {
         <button onClick={openAdd} className="btn-primary"><Plus size={15} /> Add</button>
       </div>
 
-      {/* Inline form */}
-      {(editing !== null || form.name !== undefined) && (
+      {/* ✅ Fix: showForm controls visibility — no accidental always-open bug */}
+      {showForm && (
         <div className="card card-inner space-y-3">
           <h3 className="font-serif text-sm text-primary">{editing ? 'Edit Category' : 'New Category'}</h3>
           <div className="grid grid-cols-2 gap-3">
-            <input value={form.name} onChange={e => setForm(f=>({...f,name:e.target.value}))} placeholder="Category name" className="input-field" />
-            <input value={form.slug} onChange={e => setForm(f=>({...f,slug:e.target.value}))} placeholder="url-slug" className="input-field" />
-            <input type="number" value={form.order} onChange={e => setForm(f=>({...f,order:Number(e.target.value)}))} placeholder="Order" className="input-field" />
+            <input
+              value={form.name}
+              onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+              placeholder="Category name"
+              className="input-field"
+            />
+            <input
+              value={form.slug}
+              onChange={e => setForm(f => ({ ...f, slug: e.target.value }))}
+              placeholder="url-slug"
+              className="input-field"
+            />
+            <input
+              type="number"
+              value={form.order}
+              onChange={e => setForm(f => ({ ...f, order: Number(e.target.value) }))}
+              placeholder="Order"
+              className="input-field"
+            />
           </div>
           <div>
             <label className="text-xs font-medium text-muted mb-1.5 block">Icon (optional)</label>
+            {/* ✅ Fix: isIcon=true — uses 128px compression, shows square preview */}
             <ImagePicker
               images={form.icon ? [form.icon] : []}
               onChange={imgs => setForm(f => ({ ...f, icon: imgs[0] ?? '' }))}
               multiple={false}
               maxImages={1}
               label="Choose Icon"
+              isIcon={true}
             />
           </div>
           <div className="flex gap-2">
-            <button onClick={handleSave} disabled={saving} className="btn-primary">{saving ? '…' : 'Save'}</button>
-            <button onClick={() => setEditing(null)} className="btn-outline">Cancel</button>
+            <button onClick={handleSave} disabled={saving} className="btn-primary">
+              {saving ? '…' : 'Save'}
+            </button>
+            <button onClick={closeForm} className="btn-outline">Cancel</button>
           </div>
         </div>
       )}
 
       <div className="card overflow-hidden">
         <table className="w-full">
-          <thead><tr className="border-b border-border bg-bg/40">
-            {['Order','Name','Slug','Actions'].map(h=><th key={h} className="tbl-head tbl-cell text-left">{h}</th>)}
-          </tr></thead>
+          <thead>
+            <tr className="border-b border-border bg-bg/40">
+              {['Order', 'Icon', 'Name', 'Slug', 'Actions'].map(h => (
+                <th key={h} className="tbl-head tbl-cell text-left">{h}</th>
+              ))}
+            </tr>
+          </thead>
           <tbody>
-            {loading ? [...Array(4)].map((_,i)=>(
+            {loading ? [...Array(4)].map((_, i) => (
               <tr key={i} className="border-b border-border">
-                {[...Array(4)].map((_,j)=><td key={j} className="tbl-cell"><Skeleton className="h-4 rounded"/></td>)}
+                {[...Array(5)].map((_, j) => (
+                  <td key={j} className="tbl-cell"><Skeleton className="h-4 rounded" /></td>
+                ))}
               </tr>
             )) : cats.length === 0 ? (
-              <tr><td colSpan={4} className="py-8"><EmptyState icon={Layers} title="No categories yet" /></td></tr>
-            ) : cats.map(c=>(
+              <tr>
+                <td colSpan={5} className="py-8">
+                  <EmptyState icon={Layers} title="No categories yet" />
+                </td>
+              </tr>
+            ) : cats.map(c => (
               <tr key={c.id} className="tbl-row">
                 <td className="tbl-cell text-muted">{c.order}</td>
+                {/* ✅ Fix: show icon preview in table */}
+                <td className="tbl-cell">
+                  {c.icon
+                    ? <img src={c.icon} alt={c.name} className="w-8 h-8 rounded-lg object-cover border border-border" />
+                    : <span className="text-xs text-muted/40">—</span>
+                  }
+                </td>
                 <td className="tbl-cell font-medium">{c.name}</td>
                 <td className="tbl-cell text-muted font-mono text-xs">{c.slug}</td>
                 <td className="tbl-cell">
                   <div className="flex gap-1">
-                    <button onClick={()=>openEdit(c)} className="btn-ghost p-1.5"><Pencil size={13}/></button>
-                    <button onClick={()=>handleDelete(c.id,c.name)} className="btn-ghost p-1.5 hover:text-error hover:bg-error/10"><Trash2 size={13}/></button>
+                    <button onClick={() => openEdit(c)} className="btn-ghost p-1.5">
+                      <Pencil size={13} />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(c.id, c.name)}
+                      className="btn-ghost p-1.5 hover:text-error hover:bg-error/10"
+                    >
+                      <Trash2 size={13} />
+                    </button>
                   </div>
                 </td>
               </tr>

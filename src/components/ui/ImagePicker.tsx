@@ -2,23 +2,31 @@
 
 import { useRef, useState } from 'react';
 import { ImagePlus, X, Loader2 } from 'lucide-react';
-import { fileToCompressedBase64, getBase64SizeKB, MAX_IMAGE_KB_WARNING } from '@/lib/imageUtils';
+import {
+  fileToCompressedBase64,
+  fileToIconBase64,
+  getBase64SizeKB,
+  MAX_IMAGE_KB_WARNING,
+} from '@/lib/imageUtils';
 import toast from 'react-hot-toast';
 
 interface ImagePickerProps {
-  images: string[];
-  onChange: (images: string[]) => void;
-  multiple?: boolean;
+  images:     string[];
+  onChange:   (images: string[]) => void;
+  multiple?:  boolean;
   maxImages?: number;
-  label?: string;
+  label?:     string;
+  // ✅ Fix: new prop — when true, uses icon compression (128px)
+  isIcon?:    boolean;
 }
 
 export default function ImagePicker({
   images,
   onChange,
-  multiple = true,
+  multiple  = true,
   maxImages = 6,
-  label = 'Choose from Gallery',
+  label     = 'Choose from Gallery',
+  isIcon    = false,   // ✅ default false
 }: ImagePickerProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(false);
@@ -38,7 +46,10 @@ export default function ImagePicker({
     setLoading(true);
 
     try {
-      const compressed = await Promise.all(files.map(f => fileToCompressedBase64(f)));
+      // ✅ Fix: use icon compressor when isIcon=true
+      const compressed = await Promise.all(
+        files.map(f => isIcon ? fileToIconBase64(f) : fileToCompressedBase64(f))
+      );
       const next = multiple ? [...images, ...compressed] : compressed;
 
       const nextTotalKB = next.reduce((sum, img) => sum + getBase64SizeKB(img), 0);
@@ -75,7 +86,9 @@ export default function ImagePicker({
           disabled={loading || images.length >= maxImages}
           className="btn-outline disabled:opacity-50"
         >
-          {loading ? <Loader2 size={15} className="animate-spin" /> : <ImagePlus size={15} />}
+          {loading
+            ? <Loader2 size={15} className="animate-spin" />
+            : <ImagePlus size={15} />}
           {loading ? 'Processing…' : label}
         </button>
         <span className="text-xs text-muted">
@@ -84,9 +97,13 @@ export default function ImagePicker({
       </div>
 
       {images.length > 0 && (
-        <div className="grid grid-cols-4 gap-2 mt-3">
+        <div className={isIcon ? 'flex gap-2 mt-3' : 'grid grid-cols-4 gap-2 mt-3'}>
           {images.map((src, i) => (
-            <div key={i} className="relative group aspect-square rounded-xl overflow-hidden bg-bg border border-border">
+            <div
+              key={i}
+              className={`relative group overflow-hidden bg-bg border border-border rounded-xl
+                ${isIcon ? 'w-16 h-16' : 'aspect-square'}`}
+            >
               <img src={src} alt="" className="w-full h-full object-cover" />
               <button
                 type="button"
@@ -97,7 +114,7 @@ export default function ImagePicker({
               >
                 <X size={11} />
               </button>
-              {i === 0 && multiple && (
+              {i === 0 && multiple && !isIcon && (
                 <span className="absolute bottom-1 left-1 text-[9px] bg-primary text-white px-1.5 py-0.5 rounded-md">
                   Main
                 </span>
@@ -109,3 +126,4 @@ export default function ImagePicker({
     </div>
   );
 }
+

@@ -11,18 +11,22 @@
 const MAX_WIDTH = 900;
 const JPEG_QUALITY = 0.7;
 
+// ✅ Fix: Icon images need much smaller size (for category icons)
+const ICON_MAX_WIDTH = 128;
+const ICON_JPEG_QUALITY = 0.85;
+
 /** Resize + compress an image file, return it as a base64 data URL */
 export function fileToCompressedBase64(
   file: File,
   maxWidth = MAX_WIDTH,
   quality = JPEG_QUALITY
-): Promise<string> {
+): Promise < string > {
   return new Promise((resolve, reject) => {
     if (!file.type.startsWith('image/')) {
       reject(new Error('File must be an image'));
       return;
     }
-
+    
     const reader = new FileReader();
     reader.onerror = () => reject(new Error('Failed to read file'));
     reader.onload = () => {
@@ -32,13 +36,13 @@ export function fileToCompressedBase64(
         const scale = Math.min(1, maxWidth / img.width);
         const w = Math.round(img.width * scale);
         const h = Math.round(img.height * scale);
-
+        
         const canvas = document.createElement('canvas');
         canvas.width = w;
         canvas.height = h;
         const ctx = canvas.getContext('2d');
         if (!ctx) { reject(new Error('Canvas not supported')); return; }
-
+        
         ctx.drawImage(img, 0, 0, w, h);
         resolve(canvas.toDataURL('image/jpeg', quality));
       };
@@ -46,6 +50,11 @@ export function fileToCompressedBase64(
     };
     reader.readAsDataURL(file);
   });
+}
+
+// ✅ Fix: Separate function for icon — compresses to 128×128 max
+export function fileToIconBase64(file: File): Promise < string > {
+  return fileToCompressedBase64(file, ICON_MAX_WIDTH, ICON_JPEG_QUALITY);
 }
 
 /** Approximate size in KB of a base64 data URL */
@@ -59,4 +68,4 @@ export function isDataUrl(src: string): boolean {
   return src.startsWith('data:');
 }
 
-export const MAX_IMAGE_KB_WARNING = 700; // warn if a single product doc is getting close to 1MB
+export const MAX_IMAGE_KB_WARNING = 700;
