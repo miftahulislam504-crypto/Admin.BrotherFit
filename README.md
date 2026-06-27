@@ -11,9 +11,7 @@ Connects to the **same Firebase project** as `fashionos-web`. No separate backen
 | Framework | Next.js 15 (App Router, TypeScript) |
 | Styling   | Tailwind CSS                        |
 | Charts    | Recharts                            |
-| Forms     | React Hook Form + Zod               |
-| Backend   | Firebase Auth + Firestore + Storage |
-| Deploy    | Vercel                              |
+| Forms     | React Hook Form + Zod               |                     |
 
 ## Setup
 
