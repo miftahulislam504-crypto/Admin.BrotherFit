@@ -19,6 +19,10 @@ const PAGE_TITLES: Record<string, string> = {
   '/banners':     'Banners',
   '/reviews':     'Reviews',
   '/reports':     'Reports',
+  '/inbox':       'Inbox',
+  '/automation':  'Automation',
+  '/broadcast':        'Broadcast',
+  '/automation/abandoned-cart': 'Abandoned Cart',
   '/settings':    'Settings',
 };
 
@@ -44,6 +48,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   if (!user || !isAdmin) return null;
 
+  // Also handle nested routes like /automation/builder
   const title =
     Object.entries(PAGE_TITLES).find(([key]) => pathname.startsWith(key))?.[1]
     ?? 'Admin';
