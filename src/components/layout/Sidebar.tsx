@@ -6,7 +6,7 @@ import {
   LayoutDashboard, Package, ShoppingBag, Users,
   Tag, Image, Star, Settings, LogOut, Layers,
   Percent, X, Boxes, Zap, FileBarChart,
-  MessageCircle, Radio, Bot,
+  MessageCircle, Radio, Bot,ShoppingCart,
 } from 'lucide-react';
 import { adminLogout } from '@/lib/firebase/helpers';
 import { cn } from '@/lib/utils';
