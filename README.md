@@ -97,6 +97,6 @@ This app reuses the **same `firestore.rules`** as `fashionos-web` (already inclu
 3. Add the same `NEXT_PUBLIC_FIREBASE_*` environment variables.
 4. Deploy. Recommended: protect the deployment with Vercel's password protection or restrict to a specific domain, since this is an internal tool.
 
-## Relatedble
+## Related
 
 - **Customer Website**: `fashionos-web` (separate repo, same Firebase project)
