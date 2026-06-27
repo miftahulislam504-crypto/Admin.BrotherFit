@@ -6,6 +6,7 @@ import {
   LayoutDashboard, Package, ShoppingBag, Users,
   Tag, Image, Star, Settings, LogOut, Layers,
   Percent, X, Boxes, Zap, FileBarChart,
+  MessageCircle, Radio, Bot,
 } from 'lucide-react';
 import { adminLogout } from '@/lib/firebase/helpers';
 import { cn } from '@/lib/utils';
@@ -24,6 +25,14 @@ const NAV = [
   { href: '/banners',     label: 'Banners',     icon: Image             },
   { href: '/reviews',     label: 'Reviews',     icon: Star              },
   { href: '/reports',     label: 'Reports',     icon: FileBarChart      },
+];
+
+// Automation section — separate group
+const AUTO_NAV = [
+  { href: '/inbox',       label: 'Inbox',       icon: MessageCircle },
+  { href: '/automation',  label: 'Automation',  icon: Bot           },
+  { href: '/broadcast',      label: 'Broadcast',      icon: Radio         },
+  { href: '/automation/abandoned-cart', label: 'Abandoned Cart', icon: ShoppingCart  },
 ];
 
 interface SidebarProps {
@@ -78,8 +87,18 @@ export default function Sidebar({ mobileOpen, onClose }: SidebarProps) {
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
-        {NAV.map(item => <NavItem key={item.href} {...item} />)}
+      <nav className="flex-1 px-3 py-4 overflow-y-auto">
+        <div className="space-y-0.5">
+          {NAV.map(item => <NavItem key={item.href} {...item} />)}
+        </div>
+        <div className="mt-4 pt-4 border-t border-white/10">
+          <p className="px-3 mb-1.5 text-[10px] font-semibold uppercase tracking-widest text-white/30">
+            Automation
+          </p>
+          <div className="space-y-0.5">
+            {AUTO_NAV.map(item => <NavItem key={item.href} {...item} />)}
+          </div>
+        </div>
       </nav>
 
       {/* Bottom */}
