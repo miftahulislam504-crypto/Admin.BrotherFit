@@ -88,7 +88,7 @@ src/
 
 This app reuses the **same `firestore.rules`** as `fashionos-web` (already includes the `isAdmin()` check for write access). No separate rules file needed — just make sure you've deployed the rules from the web repo to your shared Firebase project.
 
-## Deploying to Vercel
+## Deploying to Vercel tabik
 
 1. Push this repo to GitHub (separate repo from `fashionos-web`).
 2. Import into Vercel.
