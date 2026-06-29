@@ -19,6 +19,7 @@ interface Product {
 }
 
 interface ProductVariant {
+  id?: string;
   productId: string;
   size: string;
   color: string;
