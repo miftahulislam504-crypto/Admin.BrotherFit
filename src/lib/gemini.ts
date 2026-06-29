@@ -29,6 +29,8 @@ export interface ChatMessage {
 
 export interface GeminiResponse {
   reply: string;
+  inputTokens: number;
+  outputTokens: number;
   tokens: { input: number; output: number };
 }
 
@@ -49,12 +51,13 @@ async function callGemini(systemInstruction: string, contents: object[]): Promis
   }
 
   const data = await res.json();
+  const input  = data.usageMetadata?.promptTokenCount     ?? 0;
+  const output = data.usageMetadata?.candidatesTokenCount ?? 0;
   return {
     reply: (data.candidates?.[0]?.content?.parts?.[0]?.text ?? '').trim(),
-    tokens: {
-      input:  data.usageMetadata?.promptTokenCount     ?? 0,
-      output: data.usageMetadata?.candidatesTokenCount ?? 0,
-    },
+    inputTokens:  input,
+    outputTokens: output,
+    tokens: { input, output },
   };
 }
 
@@ -97,4 +100,7 @@ export async function classifyIntent(message: string): Promise<string> {
   const res = await callGemini('Return only the category name.', [{ role: 'user', parts: [{ text: prompt }] }]);
   return res.reply.toLowerCase().trim();
 }
+
+// Alias — webhook route uses generateSmartReply
+export const generateSmartReply = generateReply;
 

@@ -28,12 +28,10 @@ export async function POST(req: NextRequest) {
     }));
 
     // 3. Classify intent (for logging/analytics)
-    const { intent } = await classifyIntent(message).catch(() => ({
-      intent: 'other' as const, confidence: 0.5,
-    }));
+    const intent = await classifyIntent(message).catch(() => 'other');
 
     // 4. Generate AI reply
-    const { reply, inputTokens, outputTokens } = await generateReply(message, chatHistory);
+    const { reply, inputTokens, outputTokens } = await generateReply(message, '', chatHistory);
 
     if (!reply) {
       return NextResponse.json({ error: 'AI returned empty response' }, { status: 500 });
