@@ -58,7 +58,7 @@ async function callGemini(systemInstruction: string, contents: object[]): Promis
   };
 }
 
-export async function generateSmartReply(
+export async function generateReply(
   userMessage:  string,
   storeContext: string,
   history:      ChatMessage[] = []
