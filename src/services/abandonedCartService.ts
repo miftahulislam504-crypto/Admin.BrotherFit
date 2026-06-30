@@ -8,7 +8,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
 import { MetaAPI } from '@/lib/meta-api';
-import { generateCartReminder } from '@/lib/gemini';
+import { generateCartReminder } from '@/lib/groq';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 export interface AbandonedCartItem {
