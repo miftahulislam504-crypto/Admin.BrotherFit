@@ -1,5 +1,6 @@
 // src/app/api/webhook/meta/route.ts
 // BrotherFit — AI-First Webhook (No manual rules needed)
+// Handles text messages AND image/share attachments
 
 import { NextRequest, NextResponse } from 'next/server';
 import { generateSmartReply, classifyIntent, type ChatMessage } from '@/lib/groq';
@@ -27,6 +28,37 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 }
 
+// ── Helper: extract usable content from a Messenger event ─────────────────────
+// Returns text if present, otherwise a descriptive placeholder for attachments
+// (product photo shares, stickers, etc.) so the AI still gets useful context.
+function extractContent(ev: any): { content: string; attachmentUrl?: string } | null {
+  if (ev.message?.text) {
+    return { content: ev.message.text };
+  }
+
+  const attachments = ev.message?.attachments;
+  if (attachments && attachments.length > 0) {
+    const att = attachments[0];
+
+    // Customer shared a product photo (from the Page's catalog/post)
+    if (att.type === 'image') {
+      return {
+        content: '[কাস্টমার একটা প্রোডাক্ট ছবি শেয়ার করেছে এবং জানতে চাইছে এটা available/in stock আছে কিনা]',
+        attachmentUrl: att.payload?.url,
+      };
+    }
+    if (att.type === 'template' || att.type === 'fallback') {
+      // Shared post/photo from the page itself
+      return {
+        content: `[কাস্টমার একটা পোস্ট/ছবি শেয়ার করেছে: "${att.payload?.title ?? 'প্রোডাক্ট'}" — জানতে চাইছে এটা available আছে কিনা]`,
+        attachmentUrl: att.payload?.url,
+      };
+    }
+  }
+
+  return null;
+}
+
 // ── POST: Receive Events ──────────────────────────────────────────────────────
 export async function POST(req: NextRequest) {
   try {
@@ -36,12 +68,15 @@ export async function POST(req: NextRequest) {
     if (body.object === 'page') {
       for (const entry of body.entry ?? []) {
         for (const ev of entry.messaging ?? []) {
-          if (ev.message?.text && !ev.message.is_echo) {
+          if (ev.message?.is_echo) continue;
+          const extracted = extractContent(ev);
+          if (extracted) {
             await handleMessage({
-              senderId:  ev.sender.id,
-              content:   ev.message.text,
-              platform:  'facebook',
-              msgId:     ev.message.mid,
+              senderId:      ev.sender.id,
+              content:       extracted.content,
+              platform:      'facebook',
+              msgId:         ev.message.mid,
+              attachmentUrl: extracted.attachmentUrl,
             });
           }
         }
@@ -52,12 +87,15 @@ export async function POST(req: NextRequest) {
     if (body.object === 'instagram') {
       for (const entry of body.entry ?? []) {
         for (const ev of entry.messaging ?? []) {
-          if (ev.message?.text && !ev.message.is_echo) {
+          if (ev.message?.is_echo) continue;
+          const extracted = extractContent(ev);
+          if (extracted) {
             await handleMessage({
-              senderId:  ev.sender.id,
-              content:   ev.message.text,
-              platform:  'instagram',
-              msgId:     ev.message.mid,
+              senderId:      ev.sender.id,
+              content:       extracted.content,
+              platform:      'instagram',
+              msgId:         ev.message.mid,
+              attachmentUrl: extracted.attachmentUrl,
             });
           }
         }
@@ -72,8 +110,9 @@ export async function POST(req: NextRequest) {
           const msgs     = change.value?.messages ?? [];
           const contacts = change.value?.contacts ?? [];
           for (const msg of msgs) {
+            const name = contacts.find((c: any) => c.wa_id === msg.from)?.profile?.name;
+
             if (msg.type === 'text') {
-              const name  = contacts.find((c: any) => c.wa_id === msg.from)?.profile?.name;
               await handleMessage({
                 senderId:    msg.from,
                 content:     msg.text.body,
@@ -81,6 +120,16 @@ export async function POST(req: NextRequest) {
                 msgId:       msg.id,
                 senderName:  name,
                 phone:       msg.from,
+              });
+            } else if (msg.type === 'image') {
+              await handleMessage({
+                senderId:      msg.from,
+                content:       '[কাস্টমার একটা প্রোডাক্ট ছবি পাঠিয়েছে এবং জানতে চাইছে এটা available/in stock আছে কিনা]',
+                platform:      'whatsapp',
+                msgId:         msg.id,
+                senderName:    name,
+                phone:         msg.from,
+                attachmentUrl: msg.image?.id,
               });
             }
           }
@@ -97,12 +146,13 @@ export async function POST(req: NextRequest) {
 
 // ── Core message handler ──────────────────────────────────────────────────────
 async function handleMessage(event: {
-  senderId:   string;
-  content:    string;
-  platform:   string;
-  msgId?:     string;
-  senderName?: string;
-  phone?:     string;
+  senderId:       string;
+  content:        string;
+  platform:       string;
+  msgId?:         string;
+  senderName?:    string;
+  phone?:         string;
+  attachmentUrl?: string;
 }) {
   console.log(`[AI] ${event.platform} message: "${event.content}"`);
 
@@ -135,7 +185,7 @@ async function handleMessage(event: {
   const { reply } = await generateSmartReply(event.content, storeContext, history);
 
   if (!reply) {
-    console.warn('[AI] Empty reply from Gemini');
+    console.warn('[AI] Empty reply from Groq');
     return;
   }
 
@@ -226,4 +276,3 @@ async function saveMessage(data: {
     createdAt:         serverTimestamp(),
   });
 }
-
