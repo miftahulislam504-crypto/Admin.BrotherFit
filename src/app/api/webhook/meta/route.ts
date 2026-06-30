@@ -2,7 +2,7 @@
 // BrotherFit — AI-First Webhook (No manual rules needed)
 
 import { NextRequest, NextResponse } from 'next/server';
-import { generateSmartReply, classifyIntent, type ChatMessage } from '@/lib/gemini';
+import { generateSmartReply, classifyIntent, type ChatMessage } from '@/lib/groq';
 import { buildContext } from '@/lib/contextBuilder';
 import { MetaAPI } from '@/lib/meta-api';
 import {
