@@ -1,8 +1,9 @@
 // src/app/api/ai-reply/route.ts
-// BrotherFit Admin — AI Smart Reply Endpoint
+// BrotherFit Admin — AI Smart Reply Endpoint (Groq + Firestore context)
 
 import { NextRequest, NextResponse } from 'next/server';
-import { generateReply, classifyIntent } from '@/lib/gemini';
+import { generateSmartReply, classifyIntent, type ChatMessage } from '@/lib/groq';
+import { buildContext } from '@/lib/contextBuilder';
 import { getMessages, saveMessage, getContact } from '@/services/automationService';
 import { MetaAPI } from '@/lib/meta-api';
 
@@ -20,40 +21,41 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Contact not found' }, { status: 404 });
     }
 
-    // 2. Load recent conversation history (last 10 messages)
+    // 2. Load conversation history
     const history = await getMessages(contactId, 10);
-    const chatHistory = history.map(m => ({
-      role: m.direction === 'inbound' ? 'user' as const : 'model' as const,
+    const chatHistory: ChatMessage[] = history.map(m => ({
+      role:    m.direction === 'inbound' ? 'user' as const : 'model' as const,
       content: m.content,
     }));
 
-    // 3. Classify intent (for logging/analytics)
+    // 3. Build live Firestore context (products, settings, orders)
+    const storeContext = await buildContext(message, contact.phone);
+
+    // 4. Classify intent
     const intent = await classifyIntent(message).catch(() => 'other');
 
-    // 4. Generate AI reply
-    const { reply, inputTokens, outputTokens } = await generateReply(message, '', chatHistory);
+    // 5. Generate AI reply (Bengali-first, via Groq)
+    const { reply, tokens } = await generateSmartReply(message, storeContext, chatHistory);
 
     if (!reply) {
       return NextResponse.json({ error: 'AI returned empty response' }, { status: 500 });
     }
 
-    // 5. Auto-send if requested (from webhook flow)
+    // 6. Auto-send if requested
     if (autoSend) {
       const platformId = contact.facebookId ?? contact.instagramId ?? contact.whatsappId;
       if (platformId) {
         await MetaAPI.send(contact.platform, platformId, reply);
         await saveMessage({
-          contactId, platform: contact.platform,
-          direction: 'outbound', content: reply,
+          contactId,
+          platform:  contact.platform,
+          direction: 'outbound',
+          content:   reply,
         });
       }
     }
 
-    return NextResponse.json({
-      reply,
-      intent,
-      tokens: { input: inputTokens, output: outputTokens },
-    });
+    return NextResponse.json({ reply, intent, tokens });
 
   } catch (err: any) {
     console.error('[AI Reply]', err.message);
