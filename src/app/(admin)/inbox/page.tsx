@@ -119,6 +119,7 @@ export default function InboxPage() {
   const [msgLoad,   setMsgLoad]   = useState(false);
   const [filter,    setFilter]    = useState<string>('all');
   const [aiLoading, setAiLoading] = useState(false);
+  const [mobileView, setMobileView] = useState<'list' | 'chat'>('list');
   const bottomRef   = useRef<HTMLDivElement>(null);
 
   const loadContacts = async () => {
@@ -136,6 +137,7 @@ export default function InboxPage() {
 
   const selectContact = async (contact: AutoContact) => {
     setSelected(contact);
+    setMobileView('chat');
     setMsgLoad(true);
     const msgs = await getMessages(contact.id);
     setMessages(msgs);
@@ -215,7 +217,11 @@ export default function InboxPage() {
     <div className="flex h-[calc(100vh-120px)] border border-border rounded-2xl overflow-hidden bg-surface shadow-card">
 
       {/* ── Left: Contact List ──────────────────────────── */}
-      <div className="w-80 shrink-0 flex flex-col border-r border-border">
+      <div className={cn(
+        "shrink-0 flex flex-col border-r border-border",
+        "w-full md:w-80",
+        mobileView === 'chat' ? "hidden md:flex" : "flex"
+      )}>
 
         {/* Header */}
         <div className="px-4 pt-4 pb-3 border-b border-border">
@@ -286,11 +292,22 @@ export default function InboxPage() {
 
       {/* ── Right: Chat Panel ───────────────────────────── */}
       {selected ? (
-        <div className="flex-1 flex flex-col min-w-0">
+        <div className={cn(
+          "flex-1 flex-col min-w-0",
+          mobileView === 'chat' ? "flex" : "hidden md:flex"
+        )}>
 
           {/* Chat header */}
           <div className="flex items-center justify-between px-5 py-3.5 border-b border-border shrink-0">
             <div className="flex items-center gap-3">
+              {/* Mobile back button */}
+              <button
+                onClick={() => setMobileView('list')}
+                className="md:hidden p-1.5 -ml-1 rounded-lg hover:bg-bg text-muted hover:text-primary transition-colors"
+                aria-label="Back to contacts"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+              </button>
               <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center">
                 <User size={16} className="text-primary/60" />
               </div>
@@ -400,7 +417,7 @@ export default function InboxPage() {
           </div>
         </div>
       ) : (
-        <div className="flex-1 flex flex-col items-center justify-center text-muted bg-bg/30">
+        <div className="hidden md:flex flex-1 flex-col items-center justify-center text-muted bg-bg/30">
           <MessageCircle size={48} className="mb-3 opacity-20" />
           <p className="text-sm font-medium">Select a conversation</p>
           <p className="text-xs mt-1 opacity-70">Facebook, Instagram & WhatsApp messages</p>
