@@ -1,5 +1,5 @@
 // src/app/api/ai-reply/route.ts
-// BrotherFit Admin — AI Smart Reply Endpoint (Groq + Firestore context)
+// BrotherFit Admin — Manual "AI Reply" button endpoint (Salesman mode)
 
 import { NextRequest, NextResponse } from 'next/server';
 import { generateSmartReply, classifyIntent, type ChatMessage } from '@/lib/groq';
@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
     }
 
     // 2. Load conversation history
-    const history = await getMessages(contactId, 10);
+    const history = await getMessages(contactId, 12);
     const chatHistory: ChatMessage[] = history.map(m => ({
       role:    m.direction === 'inbound' ? 'user' as const : 'model' as const,
       content: m.content,
@@ -34,8 +34,10 @@ export async function POST(req: NextRequest) {
     // 4. Classify intent
     const intent = await classifyIntent(message).catch(() => 'other');
 
-    // 5. Generate AI reply (Bengali-first, via Groq)
-    const { reply, tokens } = await generateSmartReply(message, storeContext, chatHistory);
+    // 5. Generate AI reply (salesman mode — may include function calling)
+    const { reply, tokens, orderCreated } = await generateSmartReply(
+      message, storeContext, chatHistory, contactId
+    );
 
     if (!reply) {
       return NextResponse.json({ error: 'AI returned empty response' }, { status: 500 });
@@ -55,7 +57,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    return NextResponse.json({ reply, intent, tokens });
+    return NextResponse.json({ reply, intent, tokens, orderCreated });
 
   } catch (err: any) {
     console.error('[AI Reply]', err.message);
