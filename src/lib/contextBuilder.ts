@@ -19,6 +19,10 @@ interface Product {
   category?: string;
   categoryId?: string;
   isActive: boolean;
+  isFeatured?: boolean;    // salesman এর জন্য useful — "এটা আমাদের ফিচার্ড আইটেম"
+  salesCount?: number;     // bestseller বলার জন্য signal
+  rating?: number;
+  reviewCount?: number;
   tags?: string[];
 }
 
@@ -155,9 +159,21 @@ function formatProducts(products: Product[], variants: ProductVariant[]): string
     // Stock info
     const totalStock = pVariants.reduce((s, v) => s + (v.stock || 0), 0);
     const inStock     = totalStock > 0;
+    const lowStock    = inStock && totalStock <= 5;
 
     // Image (first one = main image)
     const mainImage = p.images && p.images.length > 0 ? p.images[0] : null;
+
+    // Sales signals — salesman কে convince করতে সাহায্য করে
+    const isBestseller = (p.salesCount ?? 0) >= 20;
+    const hasGoodRating = (p.rating ?? 0) >= 4;
+
+    const badges = [
+      p.isFeatured   ? '⭐ Featured'   : '',
+      isBestseller    ? '🔥 Bestseller' : '',
+      hasGoodRating   ? `⭐ ${p.rating}/5 (${p.reviewCount ?? 0} reviews)` : '',
+      lowStock        ? '⚡ কম স্টক বাকি' : '',
+    ].filter(Boolean).join(' | ');
 
     return [
       `📦 ${p.name}`,
@@ -167,6 +183,7 @@ function formatProducts(products: Product[], variants: ProductVariant[]): string
       `   Stock: ${inStock ? `আছে (${totalStock} পিস)` : '❌ স্টক শেষ'}`,
       p.description ? `   বিবরণ: ${p.description.substring(0, 100)}` : '',
       mainImage ? `   ছবি: ${mainImage}` : '',
+      badges ? `   ${badges}` : '',
     ].filter(Boolean).join('\n');
   }).join('\n\n');
 }
@@ -187,13 +204,13 @@ function formatOrders(orders: Order[]): string {
 function formatSettings(s: SiteSettings): string {
   const lines = [
     '🚚 Delivery:',
-    `   ঢাকার ভেতরে: ৳${s.deliveryChargeDhaka ?? 70} (1–2 দিন)`,
-    `   ঢাকার বাইরে: ৳${s.deliveryChargeOutside ?? 120} (2–4 দিন)`,
+    `   সিরাজগঞ্জের ভেতরে: ৳${s.deliveryChargeSirajganj ?? 80} (1–2 দিন)`,
+    `   সিরাজগঞ্জের বাইরে: ৳${s.deliveryChargeOutside ?? 120} (2–4 দিন)`,
     s.freeDeliveryMinOrder ? `   ৳${s.freeDeliveryMinOrder}+ এ FREE delivery` : '',
     '',
     '💳 Payment:',
-    `   বিকাশ: ${s.bkashNumber ?? '01XXXXXXXXX'}`,
-    `   নগদ: ${s.nagadNumber ?? '01XXXXXXXXX'}`,
+    `   বিকাশ: ${s.bkashNumber ?? '01872839294'}`,
+    `   নগদ: ${s.nagadNumber ?? '01872839294'}`,
     '   Cash on Delivery (COD) ✅',
     '   Card Payment ✅',
     '',
@@ -201,9 +218,9 @@ function formatSettings(s: SiteSettings): string {
     `   ${s.returnPolicy ?? '7 দিনের মধ্যে size issue তে exchange করা যাবে'}`,
     '',
     '📞 Contact:',
-    `   Phone/WhatsApp: ${s.contactPhone ?? '01XXXXXXXXX'}`,
+    `   Phone/WhatsApp: ${s.contactPhone ?? '01572934479'}`,
     `   Email: ${s.contactEmail ?? 'brotherfit06@gmail.com'}`,
-    `   Website: ${s.websiteUrl ?? 'brotherfit.com'}`,
+    `   Website: ${s.websiteUrl ?? 'brotherfit.vercel.app'}`,
   ];
   return lines.filter(l => l !== undefined).join('\n');
 }
