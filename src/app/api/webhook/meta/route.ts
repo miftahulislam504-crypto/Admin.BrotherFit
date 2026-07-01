@@ -1,9 +1,11 @@
 // src/app/api/webhook/meta/route.ts
-// BrotherFit — AI-First Webhook (No manual rules needed)
-// Handles text messages AND image/share attachments
+// BrotherFit — AI Salesman Webhook
+// Text + Vision (image) হ্যান্ডলিং, Function-calling দিয়ে order নেওয়া
 
 import { NextRequest, NextResponse } from 'next/server';
-import { generateSmartReply, classifyIntent, type ChatMessage } from '@/lib/groq';
+import {
+  generateSmartReply, generateVisionReply, classifyIntent, type ChatMessage,
+} from '@/lib/groq';
 import { buildContext } from '@/lib/contextBuilder';
 import { MetaAPI } from '@/lib/meta-api';
 import {
@@ -28,10 +30,8 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 }
 
-// ── Helper: extract usable content from a Messenger event ─────────────────────
-// Returns text if present, otherwise a descriptive placeholder for attachments
-// (product photo shares, stickers, etc.) so the AI still gets useful context.
-function extractContent(ev: any): { content: string; attachmentUrl?: string } | null {
+// ── Helper: extract content + detect image attachment ──────────────────────────
+function extractContent(ev: any): { content: string; imageUrl?: string } | null {
   if (ev.message?.text) {
     return { content: ev.message.text };
   }
@@ -40,18 +40,16 @@ function extractContent(ev: any): { content: string; attachmentUrl?: string } | 
   if (attachments && attachments.length > 0) {
     const att = attachments[0];
 
-    // Customer shared a product photo (from the Page's catalog/post)
-    if (att.type === 'image') {
+    if (att.type === 'image' && att.payload?.url) {
       return {
-        content: '[কাস্টমার একটা প্রোডাক্ট ছবি শেয়ার করেছে এবং জানতে চাইছে এটা available/in stock আছে কিনা]',
-        attachmentUrl: att.payload?.url,
+        content:  ev.message?.text || 'এই প্রোডাক্টটা কি available আছে?',
+        imageUrl: att.payload.url,
       };
     }
     if (att.type === 'template' || att.type === 'fallback') {
-      // Shared post/photo from the page itself
       return {
-        content: `[কাস্টমার একটা পোস্ট/ছবি শেয়ার করেছে: "${att.payload?.title ?? 'প্রোডাক্ট'}" — জানতে চাইছে এটা available আছে কিনা]`,
-        attachmentUrl: att.payload?.url,
+        content: `[কাস্টমার একটা পোস্ট/লিংক শেয়ার করেছে: "${att.payload?.title ?? 'প্রোডাক্ট'}"]`,
+        imageUrl: att.payload?.image_url,
       };
     }
   }
@@ -72,11 +70,11 @@ export async function POST(req: NextRequest) {
           const extracted = extractContent(ev);
           if (extracted) {
             await handleMessage({
-              senderId:      ev.sender.id,
-              content:       extracted.content,
-              platform:      'facebook',
-              msgId:         ev.message.mid,
-              attachmentUrl: extracted.attachmentUrl,
+              senderId: ev.sender.id,
+              content:  extracted.content,
+              platform: 'facebook',
+              msgId:    ev.message.mid,
+              imageUrl: extracted.imageUrl,
             });
           }
         }
@@ -91,11 +89,11 @@ export async function POST(req: NextRequest) {
           const extracted = extractContent(ev);
           if (extracted) {
             await handleMessage({
-              senderId:      ev.sender.id,
-              content:       extracted.content,
-              platform:      'instagram',
-              msgId:         ev.message.mid,
-              attachmentUrl: extracted.attachmentUrl,
+              senderId: ev.sender.id,
+              content:  extracted.content,
+              platform: 'instagram',
+              msgId:    ev.message.mid,
+              imageUrl: extracted.imageUrl,
             });
           }
         }
@@ -114,22 +112,23 @@ export async function POST(req: NextRequest) {
 
             if (msg.type === 'text') {
               await handleMessage({
-                senderId:    msg.from,
-                content:     msg.text.body,
-                platform:    'whatsapp',
-                msgId:       msg.id,
-                senderName:  name,
-                phone:       msg.from,
+                senderId:   msg.from,
+                content:    msg.text.body,
+                platform:   'whatsapp',
+                msgId:      msg.id,
+                senderName: name,
+                phone:      msg.from,
               });
             } else if (msg.type === 'image') {
+              const imageUrl = await fetchWhatsAppMediaUrl(msg.image?.id);
               await handleMessage({
-                senderId:      msg.from,
-                content:       '[কাস্টমার একটা প্রোডাক্ট ছবি পাঠিয়েছে এবং জানতে চাইছে এটা available/in stock আছে কিনা]',
-                platform:      'whatsapp',
-                msgId:         msg.id,
-                senderName:    name,
-                phone:         msg.from,
-                attachmentUrl: msg.image?.id,
+                senderId:   msg.from,
+                content:    msg.image?.caption || 'এই প্রোডাক্টটা কি available আছে?',
+                platform:   'whatsapp',
+                msgId:      msg.id,
+                senderName: name,
+                phone:      msg.from,
+                imageUrl:   imageUrl ?? undefined,
               });
             }
           }
@@ -144,17 +143,32 @@ export async function POST(req: NextRequest) {
   }
 }
 
+// ── WhatsApp media URL resolver ──────────────────────────────────────────────
+async function fetchWhatsAppMediaUrl(mediaId?: string): Promise<string | null> {
+  if (!mediaId) return null;
+  try {
+    const token = process.env.META_WHATSAPP_TOKEN!;
+    const res = await fetch(`https://graph.facebook.com/v23.0/${mediaId}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const data = await res.json();
+    return data.url ?? null;
+  } catch {
+    return null;
+  }
+}
+
 // ── Core message handler ──────────────────────────────────────────────────────
 async function handleMessage(event: {
-  senderId:       string;
-  content:        string;
-  platform:       string;
-  msgId?:         string;
-  senderName?:    string;
-  phone?:         string;
-  attachmentUrl?: string;
+  senderId:    string;
+  content:     string;
+  platform:    string;
+  msgId?:      string;
+  senderName?: string;
+  phone?:      string;
+  imageUrl?:   string;
 }) {
-  console.log(`[AI] ${event.platform} message: "${event.content}"`);
+  console.log(`[AI] ${event.platform} message: "${event.content}"${event.imageUrl ? ' [with image]' : ''}`);
 
   // 1. Find or create contact
   const contact = await findOrCreateContact(event);
@@ -170,19 +184,34 @@ async function handleMessage(event: {
 
   // 3. Update unread count
   await updateDoc(doc(db, 'automation_contacts', contact.id), {
-    lastMessage:    event.content.substring(0, 80),
-    lastMessageAt:  serverTimestamp(),
-    unreadCount:    (contact.unreadCount ?? 0) + 1,
+    lastMessage:   event.content.substring(0, 80),
+    lastMessageAt: serverTimestamp(),
+    unreadCount:   (contact.unreadCount ?? 0) + 1,
+    ...(event.phone ? { phone: event.phone } : {}),
   });
 
   // 4. Get conversation history for context
   const history = await getHistory(contact.id);
 
   // 5. Build Firestore context (products, settings, orders)
-  const storeContext = await buildContext(event.content, contact.phone);
+  const storeContext = await buildContext(event.content, contact.phone ?? event.phone);
 
-  // 6. Generate AI reply
-  const { reply } = await generateSmartReply(event.content, storeContext, history);
+  // 6. Generate AI reply — Vision path যদি ছবি থাকে, নাহলে normal function-calling path
+  let reply: string;
+  let orderCreated: { orderNumber: string; total: number } | undefined;
+
+  if (event.imageUrl) {
+    const visionRes = await generateVisionReply(
+      event.imageUrl, event.content, storeContext, contact.id
+    );
+    reply = visionRes.reply;
+  } else {
+    const smartRes = await generateSmartReply(
+      event.content, storeContext, history, contact.id
+    );
+    reply = smartRes.reply;
+    orderCreated = smartRes.orderCreated;
+  }
 
   if (!reply) {
     console.warn('[AI] Empty reply from Groq');
@@ -200,7 +229,15 @@ async function handleMessage(event: {
     content:   reply,
   });
 
-  // 9. Log intent (background, non-blocking)
+  // 9. অর্ডার তৈরি হলে contact কে "customer" status এ upgrade করবো
+  if (orderCreated) {
+    await updateDoc(doc(db, 'automation_contacts', contact.id), {
+      status: 'customer',
+    });
+    console.log(`[AI] Order created: ${orderCreated.orderNumber} — ৳${orderCreated.total}`);
+  }
+
+  // 10. Log intent (background, non-blocking)
   classifyIntent(event.content).then(intent => {
     addDoc(collection(db, 'automation_logs'), {
       contactId: contact.id,
@@ -208,6 +245,7 @@ async function handleMessage(event: {
       message:   event.content,
       reply,
       platform:  event.platform,
+      orderCreated: orderCreated ?? null,
       createdAt: serverTimestamp(),
     }).catch(() => {});
   }).catch(() => {});
@@ -233,16 +271,16 @@ async function findOrCreateContact(event: {
   }
 
   const ref = await addDoc(collection(db, 'automation_contacts'), {
-    [field]:      event.senderId,
-    name:         event.senderName ?? null,
-    phone:        event.phone ?? null,
-    platform:     event.platform,
-    status:       'new',
-    tags:         [],
-    unreadCount:  0,
-    lastMessage:  null,
-    lastMessageAt:null,
-    createdAt:    serverTimestamp(),
+    [field]:       event.senderId,
+    name:          event.senderName ?? null,
+    phone:         event.phone ?? null,
+    platform:      event.platform,
+    status:        'new',
+    tags:          [],
+    unreadCount:   0,
+    lastMessage:   null,
+    lastMessageAt: null,
+    createdAt:     serverTimestamp(),
   });
 
   return { id: ref.id, unreadCount: 0, phone: event.phone ?? null };
@@ -253,7 +291,7 @@ async function getHistory(contactId: string): Promise<ChatMessage[]> {
     collection(db, 'automation_messages'),
     where('contactId', '==', contactId),
     orderBy('createdAt', 'asc'),
-    limit(10)
+    limit(12)
   ));
 
   return snap.docs.map(d => ({
