@@ -47,7 +47,7 @@ interface Order {
 }
 
 interface SiteSettings {
-  deliveryChargeDhaka?: number;
+  deliveryChargeSirajganj?: number;
   deliveryChargeOutside?: number;
   freeDeliveryMinOrder?: number;
   returnPolicy?: string;
